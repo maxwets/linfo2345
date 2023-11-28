@@ -28,7 +28,7 @@ builder_loop(PID_List, Nodes, TxRemaining, BlockChain) ->
 						true ->
 							if
 								From == MainProposer ->
-									{NewTxRemaining, NextBlock} = buildNewBlock(TxRemaining, BlockChain),
+									{NewTxRemaining, NextBlock} = build_new_block(TxRemaining, BlockChain),
 									utils:broadcast(PID_List, {block, NextBlock, self()}),
 									builder_loop(PID_List, Nodes, NewTxRemaining, lists:append(BlockChain, [NextBlock]));
 							 true ->
@@ -69,7 +69,7 @@ builder_change_epoch_loop(PID_List, Nodes, TxRemaining, BlockChain) ->
 	end.
 
 
-buildNewBlock(TxRemaining, BlockChain) ->
+build_new_block(TxRemaining, BlockChain) ->
 	N = length(TxRemaining),
 	SizeOfBlock = (10 rem N)+1,
 	{Transactions, NewTxRemaining} = lists:split(SizeOfBlock, TxRemaining),

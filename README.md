@@ -127,7 +127,7 @@ Validator nodes expect the following messages:
 Proposer nodes have the same implementation as validator nodes, except for the main proposer.
 
 ##### Main proposer node
-TODO
+The main proposer (= the first node in the proposer group), is responsible for counting the blocks in each epoch and send `{continue}` messages to the builder when the builder is allowed to broadcast a new block, or broadcast `{epoch_end}` when a new election should start.
 
 #### Consensus algorithm
 
