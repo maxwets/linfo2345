@@ -30,8 +30,8 @@ normal_loop(PID_List, Nodes, BlockChain) ->
 		{stop, From} ->
 			if
 				From == Builder ->
-					utils:print_all_blocks(BlockChain),
-					io:format("[~p] (normal) finished~n", [self()]);
+					%io:format("[~p] (normal) finished~n", [self()]),
+					utils:print_all_blocks(BlockChain);
 				true ->
 					normal_loop(PID_List, Nodes, BlockChain)
 			end
