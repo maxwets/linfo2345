@@ -2,26 +2,26 @@
 -export([init/1]).
 
 init(N) ->
-	Nodes = init_nodes(N),
-	start_nodes(Nodes).
+	NormalNodes = init_nodes(N-1),
+	BuilderNode = init_node(),
+	PID_List = lists:append(NormalNodes, [BuilderNode]),
+	start_builder(BuilderNode, PID_List),
+	start_normal(NormalNodes, PID_List).
 
-init_nodes(N) ->
-	tail_init_nodes(N, []).
-
+init_node() -> normal_node:start().
+init_nodes(N) -> tail_init_nodes(N, []).
 tail_init_nodes(N, Acc) ->
 	if
 		N == 0 -> Acc;
-		N == 1 -> NewNode = pos_node:start(), tail_init_nodes(N-1, lists:append([NewNode], Acc));
-		N > 1 -> NewNode = pos_node:start(), tail_init_nodes(N-1, lists:append([NewNode], Acc))
+		N == 1 -> NewNode = normal_node:start(), tail_init_nodes(N-1, lists:append([NewNode], Acc));
+		N > 1 -> NewNode = normal_node:start(), tail_init_nodes(N-1, lists:append([NewNode], Acc))
 	end.
 
-start_nodes(Nodes) -> tail_start_nodes(Nodes, Nodes).
+start_builder(BuilderNode, PID_List) ->
+		BuilderNode ! {init, 1, PID_List}.
 
-tail_start_nodes(NodesToInitialize, NodeList) ->
-	case NodesToInitialize of
-		[H] ->
-			H ! {init, 1, NodeList};
-		[H|T] ->
-			H ! {init, 0, NodeList},
-			tail_start_nodes(T, NodeList)
+start_normal(NormalNodes, PID_List) ->
+	case NormalNodes of
+		[H] -> H ! {init, 0, PID_List};
+		[H|T] -> H ! {init, 0, PID_List}, start_normal(T, PID_List)
 	end.
