@@ -6,6 +6,16 @@ Maxime Wets
 
 ### Design Choices
 
+```text
+$ tree part1/
+    part1
+    |-- network.erl
+    |-- builder_node.erl
+    |-- normal_node.erl
+    |-- merkle_tree.erl
+    `-- utils.erl
+```
+
 #### Merkle Tree
 The merkle tree is implemented in `./part1/merkle_tree.erl`.
 It exports 2 functions:
@@ -51,7 +61,17 @@ The `normal_init` function simply prints a message indicating that the normal no
 
 ---
 ## PART 2
-TODO
+```
+$ tree part2/
+    part2
+    |-- network.erl
+    |-- normal_node.erl
+    |-- builder_node.erl
+    |-- validator_node.erl
+    |-- proposer_node.erl
+    |-- merkle_tree.erl
+    `-- utils.erl
+```
 
 ---
 ## PART 3
