@@ -23,17 +23,15 @@ normal_loop(PID_List, Nodes, BlockChain) ->
 		{block, NewBlock, From} ->
 			if
 				From == Builder ->
-					%io:format("[normal] ~p received block from ~p~n", [self(), From]),
 					normal_loop(PID_List, Nodes, lists:append(BlockChain, [NewBlock]));
 				true ->
-					io:format("[normal] ~p received block from ~p~n     but the sender is not the builder !", [self(), From]),
 					normal_loop(PID_List, Nodes, BlockChain)
 			end;
 		{stop, From} ->
 			if
 				From == Builder ->
-					io:format("Node ~p finishing...~n", [self()]),
-					utils:print_all_blocks(BlockChain);
+					utils:print_all_blocks(BlockChain),
+					io:format("[~p] (normal) finished~n", [self()]);
 				true ->
 					normal_loop(PID_List, Nodes, BlockChain)
 			end

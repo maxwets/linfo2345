@@ -27,6 +27,7 @@ validator_loop(PID_List, Nodes, BlockChain) ->
 		{epoch_end, From} ->
 			if
 				From == MainProposer ->
+					io:format("[~p] (validator) received an {epoch_end} message from ~p~n", [self(), From]),
 					validator_change_epoch_loop(PID_List, Nodes, BlockChain);
 				true ->
 					validator_loop(PID_List, Nodes, BlockChain)
@@ -34,8 +35,8 @@ validator_loop(PID_List, Nodes, BlockChain) ->
 		{stop, From} ->
 			if
 				From == Builder ->
-					io:format("Node ~p finishing...~n", [self()]),
-					utils:print_all_blocks(BlockChain);
+					utils:print_all_blocks(BlockChain),
+					io:format("[~p] (validator) finished~n", [self()]);
 				true ->
 					validator_loop(PID_List, Nodes, BlockChain)
 			end
@@ -52,18 +53,21 @@ proposer_loop(PID_List, Nodes, BlockChain) ->
 				true ->
 					proposer_loop(PID_List, Nodes, BlockChain)
 			end;
+
 		{epoch_end, From} ->
 			if
 				From == MainProposer ->
-					validator_change_epoch_loop(PID_List, Nodes, BlockChain);
+					io:format("[~p] (proposer) received an {epoch_end} message from ~p~n", [self(), From]),
+					proposer_change_epoch_loop(PID_List, Nodes, BlockChain);
 				true ->
 					proposer_loop(PID_List, Nodes, BlockChain)
 			end;
+
 		{stop, From} ->
 			if
 				From == Builder ->
-					io:format("Node ~p finishing...~n", [self()]),
-					utils:print_all_blocks(BlockChain);
+					utils:print_all_blocks(BlockChain),
+					io:format("[~p] (proposer) finished~n", [self()]);
 				true ->
 					proposer_loop(PID_List, Nodes, BlockChain)
 			end
@@ -75,23 +79,30 @@ main_proposer_loop(PID_List, Nodes, EpochCount, BlockChain) ->
 		EpochCount < 10 ->
 			receive
 				{block, NewBlock, From} ->
-					io:format("[main_proposer] ~p received block, epoch = ~p~n", [self(), EpochCount]),
 					if
 						From == Builder ->
-							io:format("[main_proposer] ~p got block from correct builder~n", [self()]),
+							io:format("[~p] (main_proposer) received a block from ~p (epoch=~p)~n", [self(), From, EpochCount]),
 							Builder ! {continue, self()},
 							main_proposer_loop(PID_List, Nodes, EpochCount+1, lists:append(BlockChain, [NewBlock]));
 						true ->
-							io:format("[main_proposer] ~p got block from incorrect builder~n", [self()]),
 							main_proposer_loop(PID_List, Nodes, EpochCount,BlockChain)
+					end;
+				{stop, From} ->
+					if
+						From == Builder ->
+							utils:print_all_blocks(BlockChain),
+							io:format("[~p] (main_proposer) finished~n", [self()]);
+						true ->
+							main_proposer_loop(PID_List, Nodes, BlockChain, EpochCount)
 					end
 			end;
 
 		EpochCount == 10 ->
+			io:format("[~p] (main_proposer) broadcasting {epoch_end}~n", [self()]),
 			utils:broadcast(PID_List, {epoch_end, self()}),
 			ShuffledValidators = utils:shuf(Nodes#nodes.validators),
 			NextInList = lists:nth(1, lists:delete(self(), ShuffledValidators)),
-			io:format("[main_proposer_loop] ~p is going to send the shuffled list: ~w to ~p~n", [self(), ShuffledValidators, NextInList]),
+			io:format("[~p] (main_proposer) sending shuffled list ~w to ~p~n", [self(), ShuffledValidators, NextInList]),
 			NextInList ! {validators, ShuffledValidators, self()},
 			main_proposer_change_epoch_loop(PID_List, Nodes, BlockChain)
 	end.
@@ -103,20 +114,20 @@ validator_change_epoch_loop(PID_List, Nodes, BlockChain) ->
 		{validators, List, From} ->
 			ShuffledValidators = utils:shuf(List),
 			NextInList = lists:nth(1, lists:delete(self(), ShuffledValidators)),
-			io:format("[validator_change_epoch_loop] ~p received this shuffled list ~w from ~p and will now send ~w to ~p~n", [self(), List, From, ShuffledValidators, NextInList ]),
+			io:format("[~p] (validator) received shuffled list ~w from ~p and will now send ~w to ~p~n", [self(), List, From, ShuffledValidators, NextInList]),
 			NextInList ! {validators, ShuffledValidators, self()},
 			validator_change_epoch_loop(PID_List, Nodes, BlockChain);
 
 		{proposers, List, From} ->
-			io:format("[validator_change_epoch_loop] ~p received this list of proposers: ~w from ~p~n", [self(), List, From]),
 			if
 				From == PreviousMainProposer ->
+					io:format("[~p] (validator) received proposer list ~w from ~p~n", [self(), List, From]),
 					IsNewMainProposer = lists:nth(1, List) == self(),
 					OtherProposers = lists:nthtail(1, List),
 					IsInProposers = lists:member(self(), OtherProposers),
 					if
 						IsNewMainProposer ->
-							io:format("[validator_change_epoch_loop] ~p will now become the main proposer~n", [self()]),
+							io:format("[~p] (validator) will now become the new main proposer~n", [self()]),
 							main_proposer_loop(PID_List,
 																	#nodes{ validators = Nodes#nodes.validators, builder = Nodes#nodes.builder, proposers = List, normal = Nodes#nodes.normal },
 																	0,
@@ -124,13 +135,14 @@ validator_change_epoch_loop(PID_List, Nodes, BlockChain) ->
 																);
 
 						IsInProposers ->
-							io:format("[validator_change_epoch_loop] ~p will now become a member of the proposer group~n", [self()]),
+							io:format("[~p] (validator) will now become part of the proposer group~n", [self()]),
 							proposer_loop(PID_List,
 														#nodes{ validators = Nodes#nodes.validators, builder = Nodes#nodes.builder, proposers = List, normal = Nodes#nodes.normal },
 														BlockChain
 													 );
 
 						true ->
+							io:format("[~p] (validator) was not elected as part of the proposer group~n", [self()]),
 							validator_loop(PID_List,
 														 #nodes{ validators = Nodes#nodes.validators, builder = Nodes#nodes.builder, proposers = List, normal = Nodes#nodes.normal },
 														 BlockChain
@@ -139,16 +151,63 @@ validator_change_epoch_loop(PID_List, Nodes, BlockChain) ->
 					end;
 
 				true ->
-					io:format("[validator_change_epoch_loop] ~p received ~w from ~p while the previous main proposer is ~p~n", [self(), List, From, PreviousMainProposer]),
 					validator_change_epoch_loop(PID_List, Nodes, BlockChain)
+			end
+	end.
+
+proposer_change_epoch_loop(PID_List, Nodes, BlockChain) ->
+	PreviousMainProposer = lists:nth(1, Nodes#nodes.proposers),
+	receive
+
+		{validators, List, From} ->
+			ShuffledValidators = utils:shuf(List),
+			NextInList = lists:nth(1, lists:delete(self(), ShuffledValidators)),
+			io:format("[~p] (proposer) received shuffled list ~w from ~p and will now send ~w to ~p~n", [self(), List, From, ShuffledValidators, NextInList]),
+			NextInList ! {validators, ShuffledValidators, self()},
+			proposer_change_epoch_loop(PID_List, Nodes, BlockChain);
+
+		{proposers, List, From} ->
+			if
+				From == PreviousMainProposer ->
+					io:format("[~p] (proposer) received proposer list ~w from ~p~n", [self(), List, From]),
+					IsNewMainProposer = lists:nth(1, List) == self(),
+					OtherProposers = lists:nthtail(1, List),
+					IsInProposers = lists:member(self(), OtherProposers),
+					if
+						IsNewMainProposer ->
+							io:format("[proposer_change_epoch_loop] ~p will now become the main proposer~n", [self()]),
+							main_proposer_loop(PID_List,
+																	#nodes{ validators = Nodes#nodes.validators, builder = Nodes#nodes.builder, proposers = List, normal = Nodes#nodes.normal },
+																	0,
+																	BlockChain
+																);
+
+						IsInProposers ->
+							io:format("[~p] (proposer) will now become the new main proposer~n", [self()]),
+							proposer_loop(PID_List,
+														#nodes{ validators = Nodes#nodes.validators, builder = Nodes#nodes.builder, proposers = List, normal = Nodes#nodes.normal },
+														BlockChain
+													 );
+
+						true ->
+							io:format("[~p] (proposer) was not elected as part of the proposer group~n", [self()]),
+							validator_loop(PID_List,
+														 #nodes{ validators = Nodes#nodes.validators, builder = Nodes#nodes.builder, proposers = List, normal = Nodes#nodes.normal },
+														 BlockChain
+														)
+
+					end;
+
+				true ->
+					proposer_change_epoch_loop(PID_List, Nodes, BlockChain)
 			end
 	end.
 
 main_proposer_change_epoch_loop(PID_List, Nodes, BlockChain) ->
 	receive
 		{validators, List, From} ->
-			io:format("[main_proposer_change_epoch_loop] ~p received this list of validators: ~w from ~p~n", [self(), List, From]),
 			NewProposers = utils:f10p(List),
+			io:format("[~p] (main_proposer) received shuffled list ~w from ~p and will now elect ~w as the proposer group~n", [self(), List, From, NewProposers]),
 			utils:broadcast(PID_List, {proposers, NewProposers, self()}),
 			validator_change_epoch_loop(PID_List, Nodes, BlockChain)
 	end.
