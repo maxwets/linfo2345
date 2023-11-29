@@ -1,10 +1,10 @@
 # Report LINFO2345 Project
 
-Maxime Wets 6331-16-00
+- Maxime Wets, `6331-16-00`
 
 ## PART 1
 ---
-To test the project, just run the following commands:
+To test the project, just the following commands:
 ```bash
 bash generate_transactions.sh 400
 make -C part1
@@ -91,7 +91,7 @@ The `normal_init` function simply prints a message indicating that the normal no
 
 ## PART 2
 ---
-To test the project, just run the following commands:
+To test the project, just the following commands:
 ```bash
 bash generate_transactions.sh 400
 make -C part2
@@ -174,9 +174,23 @@ The main proposer expects the following messages during its main loop:
 When in the election loop, the main proposer only expects one message:
 - `{validators, List, From}`: this indicates that the election process is ending, the main proposer will then take the first 10% nodes of the list and broadcast the new list of proposers to all validators and the builder.
 
-#### Consensus algorithm
-TODO
+### Election steps logging
+The instructions for this project asked for all the validators to write a log file with the election steps.
+However, I saw this requirement after finishing to write the code for the second part, so I did not implement it;
+instead, all the validator nodes (and the builder) are logging their current status of the election process to stdout in the following format:
+```text
+[ID] (type) <Message>
+```
+where ID is the process ID (unique ID) of the node, type is the current type of the node (`proposer`, `validator`, `main_proposer` or `builder`).
+This gives a better overview of what is happening in the backend during the election process.
+
+### Analysis of the election process
+During the election process, the first node of the proposer group will shuffle the list of all validators and send it to the first node of this shuffled list.
+Then, each node that receives a shuffled list will shuffle it again and forward it to the next node, until the list finally reaches the original sender.
+Since each list is shuffled randomly, the more nodes we add in the validator group, the more time it will take for the election to end, because the list is shuffled at every step.
+This can become a limitation of this leader election system when the number of validators grows, as there is no time bound for the election process
+(the list has to pass to a minimum of two nodes but there is no guarantee on the time complexity).
 
 ## PART 3
 ---
-
+Unfortunately, I did not have the time to finish the third part of this project.

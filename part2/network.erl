@@ -14,6 +14,7 @@ init(V, N) ->
 						 proposers=ProposerNodes,
 						 normal=NormalNodes
 						},
+	io:format("[network] Validator nodes are ~w~n", [ValidatorNodes]),
 	Temp = lists:append([BuilderNode], NormalNodes),
 	PID_List = lists:append(ValidatorNodes, Temp),
 	start_validators(ValidatorNodes, PID_List, Nodes),
