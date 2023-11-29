@@ -87,7 +87,7 @@ proposer_change_epoch_loop(PID_List, Nodes, BlockChain) ->
 					IsInProposers = lists:member(self(), OtherProposers),
 					if
 						IsNewMainProposer ->
-							io:format("[proposer_change_epoch_loop] ~p will now become the main proposer~n", [self()]),
+							io:format("[~p] (proposer) will now become the main proposer~n", [self()]),
 							main_proposer_loop(PID_List,
 																	#nodes{ validators = Nodes#nodes.validators, builder = Nodes#nodes.builder, proposers = List, normal = Nodes#nodes.normal },
 																	0,

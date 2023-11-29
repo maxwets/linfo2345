@@ -5,7 +5,7 @@
 
 init(V, N) ->
 	ValidatorNodes = init_nodes(V),
-	NormalNodes = init_nodes(N),
+	NormalNodes = init_nodes(N-1),
 	BuilderNode = init_node(),
 	ProposerNodes = utils:f10p(ValidatorNodes),
 	Nodes = #nodes{

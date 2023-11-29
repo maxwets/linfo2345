@@ -129,6 +129,15 @@ Proposer nodes have the same implementation as validator nodes, except for the m
 ##### Main proposer node
 The main proposer (= the first node in the proposer group), is responsible for counting the blocks in each epoch and send `{continue}` messages to the builder when the builder is allowed to broadcast a new block, or broadcast `{epoch_end}` when a new election should start.
 
+The main proposer node expects the following messages in its main loop (=until the epoch counter reaches 10). When entering the loop, the main proposer will check if the epoch count is lower then 10, if yes, it will send `{continue}` to the builder, else it will broadcast `{epoch_end}` to the builder and to all validators, indicating that a new election process is starting.
+
+The main proposer expects the following messages during its main loop:
+- `{block, Block, From}`: indicates that the builder has forged a new block, the main proposer will increment the epoch counter and restart the loop;
+- `{stop, From}`: indicates that the builder finished processing all the blocks. The node will then print its blockchain to CSV.
+
+When in the election loop, the main proposer only expects one message:
+- `{validators, List, From}`: this indicates that the election process is ending, the main proposer will then take the first 10% nodes of the list and broadcast the new list of proposers to all validators and the builder.
+
 #### Consensus algorithm
 
 ---
