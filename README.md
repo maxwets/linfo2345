@@ -1,8 +1,18 @@
 # Report LINFO2345 Project
-Maxime Wets
----
+
+Maxime Wets 6331-16-00
 
 ## PART 1
+---
+To test the project, just run the following commands:
+```bash
+bash generate_transactions.sh 400
+make -C part2
+md5sum part2/log/*.log | cut -d' ' -f1 | sort | uniq -c
+```
+
+It will generate 400 transactions, compile all the erlang source files and start the network with 199 normal nodes and 1 builder.
+The last command will compute the MD5 hash of all the output files for each node to verify their integrity.
 
 ### Design Choices
 
@@ -79,8 +89,17 @@ The `normal_init` function simply prints a message indicating that the normal no
 - `{block, NewBlock}`: this indicates that a new block has been pushed, the node will append the block to its internal list and recursively run the loop;
 - `{stop}`: this indicates that the builder has finished, the node will then create a CSV file and write its version of the blockchain to that file.
 
----
 ## PART 2
+---
+To test the project, just run the following commands:
+```bash
+bash generate_transactions.sh 400
+make -C part2
+md5sum part2/log/*.log | cut -d' ' -f1 | sort | uniq -c
+```
+
+It will generate 400 transactions, compile all the erlang source files and start the network with 30 validator nodes, 169 normal nodes and 1 builder.
+The last command will compute the MD5 hash of all the output files for each node to verify their integrity.
 ### Design choices
 
 ##### Directory structure
@@ -157,6 +176,6 @@ When in the election loop, the main proposer only expects one message:
 
 #### Consensus algorithm
 
----
 ## PART 3
+---
 
