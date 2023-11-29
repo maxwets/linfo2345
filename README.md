@@ -7,8 +7,8 @@ Maxime Wets 6331-16-00
 To test the project, just run the following commands:
 ```bash
 bash generate_transactions.sh 400
-make -C part2
-md5sum part2/log/*.log | cut -d' ' -f1 | sort | uniq -c
+make -C part1
+md5sum part1/log/*.log | cut -d' ' -f1 | sort | uniq -c
 ```
 
 It will generate 400 transactions, compile all the erlang source files and start the network with 199 normal nodes and 1 builder.
@@ -175,6 +175,7 @@ When in the election loop, the main proposer only expects one message:
 - `{validators, List, From}`: this indicates that the election process is ending, the main proposer will then take the first 10% nodes of the list and broadcast the new list of proposers to all validators and the builder.
 
 #### Consensus algorithm
+TODO
 
 ## PART 3
 ---
